@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>캠퍼스 시설 제보 앱</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --card: #1c2333;
+  --border: rgba(255,255,255,0.08);
+  --blue: #58a6ff;
+  --cyan: #39d9d9;
+  --green: #3fb950;
+  --amber: #e3b341;
+  --red: #f85149;
+  --purple: #bc8cff;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --mono: 'Space Mono', monospace;
+  --sans: 'Noto Sans KR', sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+/* ── TIMER ── */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: 56px;
+  background: rgba(13,17,23,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 16px; padding: 0 24px;
+}
+#timer-num {
+  font-family: var(--mono); font-size: 1.5rem;
+  color: var(--cyan); min-width: 64px;
+  transition: color 0.4s;
+}
+#timer-num.warn  { color: var(--amber); }
+#timer-num.end   { color: var(--red); animation: blink .5s infinite; }
+@keyframes blink { 50% { opacity: 0.3; } }
+#pbar-bg { flex: 1; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+#pbar    { height: 100%; width: 100%; border-radius: 2px; background: var(--cyan); transition: width 1s linear, background 0.4s; }
+#nav-pills { display: flex; gap: 6px; }
+.npill {
+  height: 6px; width: 6px; border-radius: 3px;
+  background: rgba(255,255,255,0.2); cursor: pointer;
+  transition: background .2s, width .2s;
+}
+.npill.on { background: var(--blue); width: 20px; }
+.tbtn {
+  font-family: var(--mono); font-size: .75rem; font-weight: 700;
+  padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; transition: all .15s;
+}
+#btn-go    { background: var(--blue); color: #fff; }
+#btn-go:hover { filter: brightness(1.15); }
+#btn-rst   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+#btn-rst:hover { color: var(--text); }
+
+/* ── SLIDES ── */
+main { padding-top: 56px; }
+
+.slide {
+  min-height: 100vh;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 64px 7vw;
+  border-bottom: 1px solid var(--border);
+  opacity: 0; transform: translateY(20px);
+  transition: opacity .55s, transform .55s;
+}
+.slide.vis { opacity: 1; transform: translateY(0); }
+
+.tag {
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .12em;
+  color: var(--muted); text-transform: uppercase; margin-bottom: 14px;
+}
+.tag b { color: var(--blue); }
+
+/* ── S1 TITLE ── */
+#s1 { gap: 32px; align-items: flex-start; }
+.s1-title { font-size: clamp(2.8rem,7vw,5.2rem); font-weight: 900; line-height: 1.1; letter-spacing: -.02em; }
+.s1-title em { color: var(--cyan); font-style: normal; }
+.s1-sub { font-size: clamp(1rem,2.2vw,1.3rem); color: var(--muted); max-width: 620px; line-height: 1.7; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.chip {
+  font-family: var(--mono); font-size: .75rem;
+  background: rgba(88,166,255,0.1); color: var(--blue);
+  border: 1px solid rgba(88,166,255,0.25);
+  padding: 5px 13px; border-radius: 999px;
+}
+.fac-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.fac {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px 22px; font-size: 1.05rem; font-weight: 700;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.fac span { font-size: .8rem; font-weight: 400; color: var(--muted); }
+
+/* ── S2 PROBLEM ── */
+#s2 { gap: 28px; }
+.s2-head { font-size: clamp(2rem,4.5vw,3.4rem); font-weight: 900; line-height: 1.15; }
+.s2-head em { color: var(--red); font-style: normal; }
+.prob-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+.prob-card {
+  background: var(--card); border: 1px solid rgba(248,81,73,0.2);
+  border-top: 3px solid var(--red);
+  border-radius: 12px; padding: 24px 20px;
+}
+.prob-num { font-family: var(--mono); font-size: 2rem; font-weight: 700; color: var(--red); line-height: 1; margin-bottom: 10px; }
+.prob-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+.prob-desc { font-size: .9rem; color: var(--muted); line-height: 1.6; }
+.prob-scene { margin-top: 12px; font-size: .82rem; color: #6e7681; font-style: italic; background: var(--bg); border-radius: 8px; padding: 10px 12px; }
+.vision-strip {
+  background: linear-gradient(90deg, rgba(57,217,217,.08), rgba(88,166,255,.08));
+  border: 1px solid rgba(57,217,217,.2);
+  border-radius: 12px; padding: 24px 28px;
+}
+.vision-strip .vq { font-size: clamp(1rem,2vw,1.2rem); font-weight: 700; color: var(--cyan); line-height: 1.7; }
+.vision-strip .vsub { font-size: .88rem; color: var(--muted); margin-top: 8px; }
+
+/* ── S3 ARCH ── */
+#s3 { gap: 24px; }
+.s3-head { font-size: clamp(2rem,4.5vw,3.4rem); font-weight: 900; }
+.s3-head em { color: var(--purple); font-style: normal; }
+.arch-wrap { display: flex; flex-direction: column; gap: 0; }
+.arch-row {
+  display: grid; grid-template-columns: 110px 1fr;
+  align-items: stretch; border-top: 1px solid var(--border);
+}
+.arch-row:last-child { border-bottom: 1px solid var(--border); }
+.arch-lbl {
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted);
+  padding: 16px 12px; border-right: 1px solid var(--border);
+  text-align: center; line-height: 1.4;
+}
+.arch-nodes { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 16px; align-items: center; }
+.anode {
+  border-radius: 8px; padding: 8px 14px;
+  font-size: .82rem; font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.an-pres   { background: rgba(88,166,255,.1);  border-color: rgba(88,166,255,.25); color: #79bfff; }
+.an-app    { background: rgba(57,217,217,.08); border-color: rgba(57,217,217,.2);  color: #5ee7e7; }
+.an-domain { background: rgba(227,179,65,.1);  border-color: rgba(227,179,65,.25); color: #f0c84e; }
+.an-data   { background: rgba(63,185,80,.1);   border-color: rgba(63,185,80,.25);  color: #6dce84; }
+.an-infra  { background: rgba(188,140,255,.1); border-color: rgba(188,140,255,.25); color: #d1b0ff; }
+.arch-arrow { text-align: center; color: var(--muted); font-size: .8rem; padding: 4px 0; letter-spacing: 4px; }
+
+/* ── S4 WBS ── */
+#s4 { gap: 24px; }
+.s4-head { font-size: clamp(2rem,4.5vw,3.4rem); font-weight: 900; }
+.s4-head em { color: var(--green); font-style: normal; }
+.wbs-grid { display: flex; flex-direction: column; gap: 6px; }
+.wrow {
+  display: grid;
+  grid-template-columns: 100px 1fr 150px 100px;
+  gap: 12px; align-items: center;
+  background: var(--card); border-radius: 10px;
+  padding: 14px 18px; border: 1px solid var(--border);
+  transition: border-color .2s;
+}
+.wrow:hover { border-color: rgba(255,255,255,.15); }
+.wrow.header {
+  background: transparent; border: none; border-bottom: 1px solid var(--border);
+  border-radius: 0; padding: 6px 18px;
+}
+.wrow.header .wc { font-family: var(--mono); font-size: .68rem; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+.ph {
+  display: inline-block; border-radius: 6px; padding: 3px 10px;
+  font-size: .73rem; font-weight: 700; white-space: nowrap;
+}
+.ph-plan   { background: rgba(188,140,255,.15); color: #d1b0ff; }
+.ph-design { background: rgba(57,217,217,.1);  color: #5ee7e7; }
+.ph-dev    { background: rgba(88,166,255,.15); color: #79bfff; }
+.ph-test   { background: rgba(227,179,65,.12); color: #f0c84e; }
+.ph-demo   { background: rgba(63,185,80,.12);  color: #6dce84; }
+.wc-task { font-size: .92rem; font-weight: 700; }
+.wc-out  { font-size: .8rem; color: var(--muted); font-family: var(--mono); }
+.st {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 999px; padding: 4px 11px;
+  font-size: .75rem; font-weight: 700;
+}
+.st::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+.st-done { background: rgba(63,185,80,.12); color: var(--green); }
+.st-wip  { background: rgba(88,166,255,.12); color: var(--blue); }
+.st-todo { background: rgba(139,148,158,.12); color: var(--muted); }
+.stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 8px; }
+.stat-box {
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 16px; text-align: center;
+}
+.stat-num { font-family: var(--mono); font-size: 2rem; font-weight: 700; color: var(--cyan); }
+.stat-lbl { font-size: .78rem; color: var(--muted); margin-top: 4px; }
+
+/* NEXT HINT */
+#hint {
+  position: fixed; bottom: 24px; right: 24px; z-index: 50;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 999px; padding: 8px 18px;
+  font-size: .8rem; color: var(--muted); cursor: pointer;
+  transition: all .2s;
+}
+#hint:hover { color: var(--text); border-color: rgba(255,255,255,.25); }
+
+@media (max-width: 700px) {
+  .prob-grid { grid-template-columns: 1fr; }
+  .wrow      { grid-template-columns: 90px 1fr; }
+  .wrow .wc-out, .wrow .st { display: none; }
+  .arch-row  { grid-template-columns: 70px 1fr; }
+  .stat-row  { grid-template-columns: repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div id="timer-num">2:00</div>
+  <div id="pbar-bg"><div id="pbar"></div></div>
+  <div id="nav-pills"></div>
+  <button class="tbtn" id="btn-go"  onclick="toggleTimer()">▶ 시작</button>
+  <button class="tbtn" id="btn-rst" onclick="resetTimer()">↺</button>
+</div>
+
+<main>
+
+<!-- S1 TITLE -->
+<section class="slide" id="s1" data-idx="0">
+  <div class="tag"><b>01</b> / wj-Claude Project</div>
+  <h1 class="s1-title">캠퍼스<br><em>시설 제보</em> 앱</h1>
+  <p class="s1-sub">학생이 직접 정수기·편의시설의 상태와 위치를 제보해<br>가기 전에 미리 알 수 있게 한다</p>
+  <div class="fac-row">
+    <div class="fac">🚰<span>정수기</span></div>
+    <div class="fac">🖨️<span>프린터</span></div>
+    <div class="fac">🚻<span>화장실</span></div>
+    <div class="fac">🏪<span>자판기</span></div>
+  </div>
+  <div class="chip-row">
+    <span class="chip">Flutter 3</span>
+    <span class="chip">Firebase Auth</span>
+    <span class="chip">Cloud Firestore</span>
+    <span class="chip">Riverpod</span>
+    <span class="chip">go_router</span>
+    <span class="chip">SQLite Cache</span>
+  </div>
+</section>
+
+<!-- S2 PROBLEM & VISION -->
+<section class="slide" id="s2" data-idx="1">
+  <div class="tag"><b>02</b> / 기획 — 비전 &amp; 문제 정의</div>
+  <h2 class="s2-head">아무도 모른다,<br><em>가보기 전까지는</em></h2>
+  <div class="prob-grid">
+    <div class="prob-card">
+      <div class="prob-num">01</div>
+      <div class="prob-title">상태 불명확</div>
+      <div class="prob-desc">고장 여부를 직접 가봐야만 확인 가능</div>
+      <div class="prob-scene">"3층까지 올라갔더니 프린터가 고장이었다"</div>
+    </div>
+    <div class="prob-card">
+      <div class="prob-num">02</div>
+      <div class="prob-title">위치 파악 어려움</div>
+      <div class="prob-desc">어느 건물 어느 층인지 모르는 경우가 많음</div>
+      <div class="prob-scene">"캠퍼스 어딘가 있겠지… 근데 어디?"</div>
+    </div>
+    <div class="prob-card">
+      <div class="prob-num">03</div>
+      <div class="prob-title">정보 신뢰 불가</div>
+      <div class="prob-desc">언제 확인된 정보인지 알 수 없어 믿기 어려움</div>
+      <div class="prob-scene">"마지막 확인이 언젠데 이걸 믿어도 되나?"</div>
+    </div>
+  </div>
+  <div class="vision-strip">
+    <div class="vq">"학생들이 직접 정수기·편의시설의 상태와 위치를 제보해,<br>캠퍼스 어디서든 가기 전에 미리 알 수 있게 한다."</div>
+    <div class="vsub">원터치 상태 갱신 · 카테고리/건물 필터 · 마지막 확인 시간 · 익명 제보</div>
+  </div>
+</section>
+
+<!-- S3 ARCHITECTURE -->
+<section class="slide" id="s3" data-idx="2">
+  <div class="tag"><b>03</b> / 설계 — 아키텍처</div>
+  <h2 class="s3-head">Clean Architecture<br><em>× Feature-First</em></h2>
+  <div class="arch-wrap">
+    <div class="arch-row">
+      <div class="arch-lbl">Presentation</div>
+      <div class="arch-nodes">
+        <span class="anode an-pres">FacilityListPage</span>
+        <span class="anode an-pres">FacilityDetailPage</span>
+        <span class="anode an-pres">MyReportsPage</span>
+        <span class="anode an-pres">OneTouchButton</span>
+        <span class="anode an-pres">StatusBadge</span>
+        <span class="anode an-pres">CategoryFilterBar</span>
+      </div>
+    </div>
+    <div style="text-align:center;padding:6px;color:var(--muted);font-size:.78rem;letter-spacing:4px">Riverpod Providers ↓</div>
+    <div class="arch-row">
+      <div class="arch-lbl">Application<br>Use Cases</div>
+      <div class="arch-nodes">
+        <span class="anode an-app">GetFacilityList</span>
+        <span class="anode an-app">GetNearbyFacilities</span>
+        <span class="anode an-app">UpdateFacilityStatus</span>
+        <span class="anode an-app">SubmitReport</span>
+        <span class="anode an-app">GetMyReports</span>
+      </div>
+    </div>
+    <div style="text-align:center;padding:6px;color:var(--muted);font-size:.78rem;letter-spacing:4px">Repository Interface ↓</div>
+    <div class="arch-row">
+      <div class="arch-lbl">Domain<br>Entities</div>
+      <div class="arch-nodes">
+        <span class="anode an-domain">Facility</span>
+        <span class="anode an-domain">FacilityType</span>
+        <span class="anode an-domain">FacilityReport</span>
+        <span class="anode an-domain">FacilityRepository (abstract)</span>
+        <span class="anode an-domain">ReportRepository (abstract)</span>
+      </div>
+    </div>
+    <div style="text-align:center;padding:6px;color:var(--muted);font-size:.78rem;letter-spacing:4px">Implementation ↓</div>
+    <div class="arch-row">
+      <div class="arch-lbl">Data<br>Sources</div>
+      <div class="arch-nodes">
+        <span class="anode an-data">FacilityRemoteDS (Firestore)</span>
+        <span class="anode an-data">FacilityLocalDS (SQLite)</span>
+        <span class="anode an-data">ReportRemoteDS (Firestore)</span>
+        <span class="anode an-data">FacilityModel</span>
+        <span class="anode an-data">ReportModel</span>
+      </div>
+    </div>
+    <div style="text-align:center;padding:6px;color:var(--muted);font-size:.78rem;letter-spacing:4px">External Services ↓</div>
+    <div class="arch-row">
+      <div class="arch-lbl">Infra</div>
+      <div class="arch-nodes">
+        <span class="anode an-infra">Cloud Firestore</span>
+        <span class="anode an-infra">Firebase Auth</span>
+        <span class="anode an-infra">SQLite (sqflite)</span>
+        <span class="anode an-infra">go_router</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S4 WBS -->
+<section class="slide" id="s4" data-idx="3">
+  <div class="tag"><b>04</b> / WBS — 작업 분류 체계</div>
+  <h2 class="s4-head">프로젝트<br><em>진행 현황</em></h2>
+  <div class="wbs-grid">
+    <div class="wrow header">
+      <span class="wc">단계</span>
+      <span class="wc">태스크</span>
+      <span class="wc">산출물</span>
+      <span class="wc">상태</span>
+    </div>
+    <div class="wrow"><span class="ph ph-plan">기획</span><span class="wc-task">비전 &amp; 문제 정의</span><span class="wc-out">00-vision.md</span><span class="st st-done">완료</span></div>
+    <div class="wrow"><span class="ph ph-plan">기획</span><span class="wc-task">요구사항 MoSCoW 분류</span><span class="wc-out">01-requirements.md</span><span class="st st-done">완료</span></div>
+    <div class="wrow"><span class="ph ph-design">설계</span><span class="wc-task">Clean Architecture 설계</span><span class="wc-out">폴더구조 / 레이어</span><span class="st st-done">완료</span></div>
+    <div class="wrow"><span class="ph ph-design">설계</span><span class="wc-task">도메인 엔티티 정의</span><span class="wc-out">Facility, FacilityReport</span><span class="st st-done">완료</span></div>
+    <div class="wrow"><span class="ph ph-dev">개발</span><span class="wc-task">Firebase 연동 (Auth + Firestore)</span><span class="wc-out">datasources/remote</span><span class="st st-done">완료</span></div>
+    <div class="wrow"><span class="ph ph-dev">개발</span><span class="wc-task">Repository 구현 + SQLite 캐시</span><span class="wc-out">*_repository_impl.dart</span><span class="st st-done">완료</span></div>
+    <div class="wrow"><span class="ph ph-dev">개발</span><span class="wc-task">시설 목록 UI (카테고리·건물 필터)</span><span class="wc-out">facility_list_page</span><span class="st st-done">완료</span></div>
+    <div class="wrow"><span class="ph ph-dev">개발</span><span class="wc-task">원터치 상태 갱신 버튼</span><span class="wc-out">one_touch_button</span><span class="st st-done">완료</span></div>
+    <div class="wrow"><span class="ph ph-dev">개발</span><span class="wc-task">제보 제출 / 내 제보 기록</span><span class="wc-out">report_bottom_sheet</span><span class="st st-wip">진행중</span></div>
+    <div class="wrow"><span class="ph ph-dev">개발</span><span class="wc-task">시설 상세 페이지</span><span class="wc-out">facility_detail_page</span><span class="st st-wip">진행중</span></div>
+    <div class="wrow"><span class="ph ph-test">테스트</span><span class="wc-task">핵심 3기능 통합 테스트</span><span class="wc-out">test/ 디렉토리</span><span class="st st-todo">예정</span></div>
+    <div class="wrow"><span class="ph ph-demo">데모</span><span class="wc-task">기말 발표 2~3분 데모 준비</span><span class="wc-out">발표자료 + 앱 시연</span><span class="st st-todo">예정</span></div>
+  </div>
+  <div class="stat-row">
+    <div class="stat-box"><div class="stat-num">8</div><div class="stat-lbl">완료</div></div>
+    <div class="stat-box"><div class="stat-num">2</div><div class="stat-lbl">진행중</div></div>
+    <div class="stat-box"><div class="stat-num">2</div><div class="stat-lbl">예정</div></div>
+    <div class="stat-box"><div class="stat-num">67%</div><div class="stat-lbl">전체 진행률</div></div>
+  </div>
+</section>
+
+</main>
+
+<div id="hint" onclick="nextSlide()">다음 ↓</div>
+
+<script>
+const TOTAL = 120;
+let rem = TOTAL, running = false, iv = null;
+
+function fmt(s){ return Math.floor(s/60)+':'+(s%60).toString().padStart(2,'0'); }
+function draw(){
+  const n=document.getElementById('timer-num');
+  const p=document.getElementById('pbar');
+  n.textContent = rem<=0 ? '⏰ 끝!' : fmt(rem);
+  p.style.width=(rem/TOTAL*100)+'%';
+  n.className = rem<=20?'end':rem<=40?'warn':'';
+  p.style.background = rem<=20?'var(--red)':rem<=40?'var(--amber)':'var(--cyan)';
+}
+function toggleTimer(){
+  const b=document.getElementById('btn-go');
+  if(!running){
+    running=true; b.textContent='⏸ 정지';
+    iv=setInterval(()=>{ if(rem<=0){clearInterval(iv);running=false;b.textContent='▶ 시작';draw();return;} rem--;draw(); },1000);
+  } else { running=false; clearInterval(iv); b.textContent='▶ 시작'; }
+}
+function resetTimer(){ clearInterval(iv); running=false; rem=TOTAL; document.getElementById('btn-go').textContent='▶ 시작'; draw(); }
+
+const slides=[...document.querySelectorAll('.slide')];
+const pills=document.getElementById('nav-pills');
+slides.forEach((_,i)=>{ const d=document.createElement('div'); d.className='npill'+(i===0?' on':''); d.onclick=()=>slides[i].scrollIntoView({behavior:'smooth'}); pills.appendChild(d); });
+
+const obs=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('vis'); const i=parseInt(e.target.dataset.idx); document.querySelectorAll('.npill').forEach((p,j)=>p.classList.toggle('on',i===j)); } }),{threshold:.3});
+slides.forEach(s=>obs.observe(s));
+
+let cur=0;
+function nextSlide(){ cur=(cur+1)%slides.length; slides[cur].scrollIntoView({behavior:'smooth'}); }
+
+draw();
+</script>
+</body>
+</html>
